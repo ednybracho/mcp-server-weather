@@ -1,17 +1,26 @@
+# weather.py
+# This module provides weather alert and forecast tools using the US National Weather Service (NWS) API.
+# It defines MCP tools for fetching alerts by state and forecasts by latitude/longitude.
+
 from typing import Any
 import httpx
 from mcp.server.fastmcp import FastMCP
 
-# Initialize FastMCP server
+# Initialize FastMCP server with the name 'weather'
 mcp = FastMCP("weather")
 
-# Constants
+# Constants for the NWS API base URL and user agent string
 NWS_API_BASE = "https://api.weather.gov"
 USER_AGENT = "weather-app/1.0"
 
 
 async def make_nws_request(url: str) -> dict[str, Any] | None:
-    """Make a request to the NWS API with proper error handling."""
+    """Make a request to the NWS API with proper error handling.
+    Args:
+        url: The full URL to request from the NWS API.
+    Returns:
+        The JSON response as a dictionary, or None if the request fails.
+    """
     headers = {
         "User-Agent": USER_AGENT,
         "Accept": "application/geo+json"
@@ -26,7 +35,12 @@ async def make_nws_request(url: str) -> dict[str, Any] | None:
 
 
 def format_alert(feature: dict) -> str:
-    """Format an alert feature into a readable string."""
+    """Format an alert feature into a readable string.
+    Args:
+        feature: A GeoJSON feature dictionary from the NWS alerts API.
+    Returns:
+        A formatted string describing the alert.
+    """
     props = feature["properties"]
     return f"""
 Event: {props.get('event', 'Unknown')}
@@ -43,6 +57,8 @@ async def get_alerts(state: str) -> str:
 
     Args:
         state: Two-letter US state code (e.g. CA, NY)
+    Returns:
+        A string with formatted alerts or an error message.
     """
     url = f"{NWS_API_BASE}/alerts/active/area/{state}"
     data = await make_nws_request(url)
@@ -64,6 +80,8 @@ async def get_forecast(latitude: float, longitude: float) -> str:
     Args:
         latitude: Latitude of the location
         longitude: Longitude of the location
+    Returns:
+        A string with the next 5 forecast periods or an error message.
     """
     # First get the forecast grid endpoint
     points_url = f"{NWS_API_BASE}/points/{latitude},{longitude}"
@@ -94,5 +112,5 @@ Forecast: {period['detailedForecast']}
     return "\n---\n".join(forecasts)
 
 if __name__ == "__main__":
-    # Initialize and run the server
+    # Initialize and run the server using stdio transport
     mcp.run(transport='stdio')
